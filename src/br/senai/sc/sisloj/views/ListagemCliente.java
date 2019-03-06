@@ -23,6 +23,8 @@ import javax.swing.table.DefaultTableModel;
 public class ListagemCliente extends javax.swing.JPanel {
 
     private CardLayout cl;
+    
+    private int codcli;
 
     public ListagemCliente() {
         initComponents();
@@ -101,6 +103,7 @@ public class ListagemCliente extends javax.swing.JPanel {
         jSeparator4 = new javax.swing.JSeparator();
         btnSalvar = new javax.swing.JButton();
         cpCelular = new javax.swing.JFormattedTextField();
+        btnApagarCadastro = new javax.swing.JButton();
 
         setLayout(new java.awt.CardLayout());
 
@@ -199,6 +202,13 @@ public class ListagemCliente extends javax.swing.JPanel {
             ex.printStackTrace();
         }
 
+        btnApagarCadastro.setText("Apagar");
+        btnApagarCadastro.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnApagarCadastroActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout painelEdicaoLayout = new javax.swing.GroupLayout(painelEdicao);
         painelEdicao.setLayout(painelEdicaoLayout);
         painelEdicaoLayout.setHorizontalGroup(
@@ -231,7 +241,8 @@ public class ListagemCliente extends javax.swing.JPanel {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(cpComplemento))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, painelEdicaoLayout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btnApagarCadastro, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(btnSalvar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(painelEdicaoLayout.createSequentialGroup()
                         .addGroup(painelEdicaoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -285,7 +296,9 @@ public class ListagemCliente extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSalvar)
+                .addGroup(painelEdicaoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnSalvar)
+                    .addComponent(btnApagarCadastro))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -311,14 +324,15 @@ public class ListagemCliente extends javax.swing.JPanel {
 
         cli.setCepcli(Long.parseLong(cep));
         cli.setCelcli(Long.parseLong(celular));
-
+        cli.setCodcli(this.codcli);
+        
         //Inseri o cliente no banco de dados
         ClienteDao cliDao = new ClienteDao();
         try {
-            cliDao.inserir(cli);
-            JOptionPane.showMessageDialog(null, "Cliente inserido com sucesso !");
+            cliDao.alterar(cli);
+            JOptionPane.showMessageDialog(null, "Cliente Atualizado!");
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(null, "Falha ao inserir cliente !");
+            JOptionPane.showMessageDialog(null, "Falha ao Atualizar Cliente !");
             Logger.getLogger(CadastroCliente.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_btnSalvarActionPerformed
@@ -327,12 +341,58 @@ public class ListagemCliente extends javax.swing.JPanel {
         this.popularTabela();
     }//GEN-LAST:event_painelListagemComponentShown
 
+    private void preencherFormulario(int codigoCliente){
+        ClienteDao cli = new ClienteDao();
+              
+        this.codcli = codigoCliente; 
+        
+        try {
+            Cliente cliente = cli.getCliente(codigoCliente);
+            cpNome.setText(cliente.getNomcli());
+            cpEndereco.setText(cliente.getEndcli());
+            cpBairro.setText(cliente.getBaicli());
+            cpComplemento.setText(cliente.getComcli());
+            cpCep.setText(""+cliente.getCepcli());
+            cpCelular.setText(""+cliente.getCelcli());
+        } catch (SQLException ex) {
+            Logger.getLogger(ListagemCliente.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    } 
+    
     private void tblClienteMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblClienteMouseClicked
-        JOptionPane.showMessageDialog(null, "Você clicou na linha: " + tblCliente.getSelectedRow());
+        int linha = tblCliente.getSelectedRow();
+        
+        if (linha != -1){
+            String codigo = tblCliente.getValueAt(linha, 0).toString();
+            int codigoCliente = Integer.parseInt(codigo);
+            this.preencherFormulario(codigoCliente);
+            this.cl.show(this, "painelEdicao");
+        }
     }//GEN-LAST:event_tblClienteMouseClicked
+
+    private void btnApagarCadastroActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnApagarCadastroActionPerformed
+        Object[] options = {"Sim", "Não"};
+        int opcaoSelecionada = JOptionPane.showOptionDialog(null, "Deseja realmente eliminar este cliente ?", "Atenção!", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+        
+        if (opcaoSelecionada == 0){
+            ClienteDao cliDao = new ClienteDao();
+            try {                
+                cliDao.eliminar(this.codcli);
+                this.limparTabela();
+                this.cl.show(this, "painelListagem");
+                JOptionPane.showMessageDialog(null, "Cliente Apagado!");
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(null, "Erro!");
+                Logger.getLogger(ListagemCliente.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+        }
+    }//GEN-LAST:event_btnApagarCadastroActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnApagarCadastro;
     private javax.swing.JButton btnSalvar;
     private javax.swing.JTextField cpBairro;
     private javax.swing.JFormattedTextField cpCelular;
